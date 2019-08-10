@@ -110,3 +110,10 @@
  * OFF: schedtune.prefer_idle is honored as is.
  */
 #define SCHED_FEAT_EAS_USE_NEED_IDLE 1
+
+/*
+ * Inflate the effective utilization of SchedTune-boosted tasks, which
+ * generally leads to usage of higher frequencies.
+ * If disabled, boosts will only bias tasks to higher-capacity CPUs.
+ */
+#define SCHED_FEAT_SCHEDTUNE_BOOST_UTIL 0
