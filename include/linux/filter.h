@@ -414,10 +414,8 @@ struct bpf_prog {
 	unsigned int		(*bpf_func)(const struct sk_buff *skb,
 					    const struct bpf_insn *filter);
 	/* Instructions for interpreter */
-	union {
-		struct sock_filter	insns[0];
-		struct bpf_insn		insnsi[0];
-	};
+	struct sock_filter	insns[0];
+	struct bpf_insn		insnsi[];
 };
 
 struct sk_filter {
