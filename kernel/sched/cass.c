@@ -108,12 +108,13 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync)
 		/* Use the free candidate slot for @curr */
 		struct cass_cpu_cand *curr = &cands[cidx];
 		struct cpuidle_state *idle_state;
+		struct rq *rq = cpu_rq(cpu);
 
 		/*
 		 * Check if this CPU is idle. For sync wakes, always treat the
 		 * current CPU as idle.
 		 */
-		if ((sync && cpu == smp_processor_id()) || idle_cpu(cpu)) {
+		if ((sync && cpu == smp_processor_id() && rq->nr_running == 1) || idle_cpu(cpu)) {
 			/* Discard any previous non-idle candidate */
 			if (!has_idle)
 				best = curr;
