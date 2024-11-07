@@ -171,7 +171,7 @@ static int move_irq_to_cpu(struct bal_irq *bi, int cpu)
 					irq_desc_get_irq(desc),
 					desc->action->name, prev_cpu, cpu);
 			else
-				pr_info("Moved IRQ%d (CPU%d -> CPU%d)\n",
+				pr_debug("Moved IRQ%d (CPU%d -> CPU%d)\n",
 					irq_desc_get_irq(desc), prev_cpu, cpu);
 		}
 	}
