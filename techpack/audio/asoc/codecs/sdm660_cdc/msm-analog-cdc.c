@@ -609,7 +609,7 @@ static void msm_anlg_cdc_mbhc_calc_impedance(struct wcd_mbhc *mbhc,
 	struct snd_soc_codec *codec = mbhc->codec;
 	struct sdm660_cdc_priv *sdm660_cdc =
 					snd_soc_codec_get_drvdata(codec);
-	s16 impedance_l, impedance_r;
+	s16 impedance_l = 0, impedance_r = 0;
 	s16 impedance_l_fixed;
 	s16 reg0, reg1, reg2, reg3, reg4;
 	bool high = false;
