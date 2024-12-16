@@ -2752,7 +2752,7 @@ static inline u64 scale_load_to_cpu(u64 load, int cpu)
 
 static inline int cpu_capacity(int cpu)
 {
-	return capacity_orig_of(cpu);
+	return SCHED_CAPACITY_SCALE;
 }
 
 static inline void set_preferred_cluster(struct related_thread_group *grp) { }
