@@ -333,12 +333,20 @@ static int ntfs_fs_parse_param(struct fs_context *fc,
 	case Opt_acl:
 		if (!result.negated)
 #ifdef CONFIG_NTFS3_FS_POSIX_ACL
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 			fc->sb_flags |= SB_POSIXACL;
+#else
+			fc->s_flags |= MS_POSIXACL;
+#endif
 #else
 			return invalf(fc, "ntfs3: Support for ACL not compiled in!");
 #endif
 		else
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 			fc->sb_flags &= ~SB_POSIXACL;
+#else
+			fc->s_flags &= ~MS_POSIXACL;
+#endif
 		break;
 	case Opt_showmeta:
 		opts->showmeta = result.negated ? 0 : 1;
@@ -368,7 +376,11 @@ static int ntfs_fs_reconfigure(struct fs_context *fc)
 	struct ntfs_mount_options *new_opts = fc->fs_private;
 	int ro_rw;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 	ro_rw = sb_rdonly(sb) && !(fc->sb_flags & SB_RDONLY);
+#else
+	ro_rw = (sb->s_flags & MS_RDONLY) && !(fc->s_flags & MS_RDONLY);
+#endif
 	if (ro_rw && (sbi->flags & NTFS_FLAGS_NEED_REPLAY)) {
 		errorf(fc, "ntfs3: Couldn't remount rw because journal is not replayed. Please umount/remount instead\n");
 		return -EINVAL;
@@ -542,7 +554,11 @@ static int ntfs_show_options(struct seq_file *m, struct dentry *root)
 		seq_puts(m, ",noacsrules");
 	if (opts->prealloc)
 		seq_puts(m, ",prealloc");
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 	if (sb->s_flags & SB_POSIXACL)
+#else
+	if (sb->s_flags & MS_POSIXACL)
+#endif
 		seq_puts(m, ",acl");
 
 	return 0;
@@ -815,7 +831,11 @@ static int ntfs_init_from_boot(struct super_block *sb, u32 sector_size,
 			sb,
 			"RAW NTFS volume: Filesystem size %u.%02u Gb > volume size %u.%02u Gb. Mount in read-only",
 			gb, mb, gb0, mb0);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 		sb->s_flags |= SB_RDONLY;
+#else
+		sb->s_flags |= MS_RDONLY;
+#endif
 	}
 
 	clusters = sbi->volume.size >> sbi->cluster_bits;
@@ -904,7 +924,11 @@ static int ntfs_fill_super(struct super_block *sb, struct fs_context *fc)
 	sbi->sb = sb;
 	sbi->options = fc->fs_private;
 	fc->fs_private = NULL;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 	sb->s_flags |= SB_NODIRATIME;
+#else
+	sb->s_flags |= MS_NODIRATIME;
+#endif
 	sb->s_magic = 0x7366746e; // "ntfs"
 	sb->s_op = &ntfs_sops;
 	sb->s_export_op = &ntfs_export_ops;
@@ -1017,14 +1041,22 @@ static int ntfs_fill_super(struct super_block *sb, struct fs_context *fc)
 	iput(inode);
 
 	if (sbi->flags & NTFS_FLAGS_NEED_REPLAY) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 		if (!sb_rdonly(sb)) {
+#else
+		if (!(sbi->sb->s_flags & MS_RDONLY)) {
+#endif
 			ntfs_warn(sb,
 				  "failed to replay log file. Can't mount rw!");
 			err = -EINVAL;
 			goto out;
 		}
 	} else if (sbi->volume.flags & VOLUME_FLAG_DIRTY) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 		if (!sb_rdonly(sb) && !sbi->options->force) {
+#else
+		if (!(sbi->sb->s_flags & MS_RDONLY) && !sbi->options->force) {
+#endif
 			ntfs_warn(
 				sb,
 				"volume is dirty and \"force\" flag is not set!");
@@ -1136,7 +1168,14 @@ static int ntfs_fill_super(struct super_block *sb, struct fs_context *fc)
 		goto put_inode_out;
 	}
 	bytes = inode->i_size;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
 	sbi->def_table = t = kvmalloc(bytes, GFP_KERNEL);
+#else
+	sbi->def_table = t = kmalloc(bytes, GFP_KERNEL);
+	if (!t) {
+		sbi->def_table = t = kmalloc(bytes, GFP_KERNEL);
+	}
+#endif
 	if (!t) {
 		err = -ENOMEM;
 		goto put_inode_out;
@@ -1290,7 +1329,11 @@ void ntfs_unmap_meta(struct super_block *sb, CLST lcn, CLST len)
 	sector_t devblock = (u64)lcn * sbi->blocks_per_cluster;
 	unsigned long blocks = (u64)len * sbi->blocks_per_cluster;
 	unsigned long cnt = 0;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 	unsigned long limit = global_zone_page_state(NR_FREE_PAGES)
+#else
+	unsigned long limit = global_page_state(NR_FREE_PAGES)
+#endif
 			      << (PAGE_SHIFT - sb->s_blocksize_bits);
 
 	if (limit >= 0x2000)
@@ -1301,7 +1344,11 @@ void ntfs_unmap_meta(struct super_block *sb, CLST lcn, CLST len)
 		limit >>= 1;
 
 	while (blocks--) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
 		clean_bdev_aliases(bdev, devblock++, 1);
+#else
+		unmap_underlying_metadata(bdev, devblock++);
+#endif
 		if (cnt++ >= limit) {
 			sync_blockdev(bdev);
 			cnt = 0;
@@ -1407,7 +1454,14 @@ static int ntfs_init_fs_context(struct fs_context *fc)
 	if (!sbi)
 		goto free_opts;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
 	sbi->upcase = kvmalloc(0x10000 * sizeof(short), GFP_KERNEL);
+#else
+	sbi->upcase = kmalloc(0x10000 * sizeof(short), GFP_KERNEL);
+	if (!sbi->upcase) {
+		sbi->upcase = vmalloc(0x10000 * sizeof(short), GFP_KERNEL);
+	}
+#endif
 	if (!sbi->upcase)
 		goto free_sbi;
 
