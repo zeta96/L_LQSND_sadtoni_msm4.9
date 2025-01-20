@@ -490,8 +490,13 @@ bool dir_is_empty(struct inode *dir);
 extern const struct file_operations ntfs_dir_operations;
 
 /* Globals from file.c */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 int ntfs_getattr(const struct path *path,
 		 struct kstat *stat, u32 request_mask, u32 flags);
+#else
+int ntfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
+		 struct kstat *stat);
+#endif
 void ntfs_sparse_cluster(struct inode *inode, struct page *page0, CLST vcn,
 			 CLST len);
 int ntfs3_setattr(struct dentry *dentry,
