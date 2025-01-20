@@ -1659,7 +1659,12 @@ out4:
 	clear_rec_inuse(rec);
 	clear_nlink(inode);
 	ni->mi.dirty = false;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
 	discard_new_inode(inode);
+#else
+	unlock_new_inode(inode);
+	iput(inode);
+#endif
 out3:
 	ntfs_mark_rec_free(sbi, ino);
 
