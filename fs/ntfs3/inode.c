@@ -1610,7 +1610,11 @@ struct inode *ntfs_create_inode(
 	}
 
 #ifdef CONFIG_NTFS3_FS_POSIX_ACL
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 	if (!S_ISLNK(mode) && (sb->s_flags & SB_POSIXACL)) {
+#else
+	if (!S_ISLNK(mode) && (sb->s_flags & MS_POSIXACL)) {
+#endif
 		err = ntfs_init_acl(inode, dir);
 		if (err)
 			goto out7;
