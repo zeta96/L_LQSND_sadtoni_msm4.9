@@ -10,9 +10,16 @@
 #ifndef _LINUX_NTFS3_NTFS_H
 #define _LINUX_NTFS3_NTFS_H
 
+#include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 16, 0)
+#include <linux/iversion.h>
+#endif
+
 #include <linux/blkdev.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
 #include <linux/build_bug.h>
+#else
+#include "compat.h"
 #endif
 #include <linux/kernel.h>
 #include <linux/stddef.h>
