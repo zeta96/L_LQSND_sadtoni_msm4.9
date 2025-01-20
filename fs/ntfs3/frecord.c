@@ -3194,7 +3194,11 @@ int ni_write_inode(struct inode *inode, int sync, const char *hint)
 	struct rb_node *node, *next;
 	struct NTFS_DUP_INFO dup;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 	if (is_bad_inode(inode) || sb_rdonly(sb))
+#else
+	if (is_bad_inode(inode) || (sb->s_flags & MS_RDONLY))
+#endif
 		return 0;
 
 	if (!ni_trylock(ni)) {
@@ -3248,7 +3252,11 @@ int ni_write_inode(struct inode *inode, int sync, const char *hint)
 		if (!ntfs_is_meta_file(sbi, inode->i_ino) &&
 		    (modified || (ni->ni_flags & NI_FLAG_UPDATE_PARENT))
 		    /* Avoid __wait_on_freeing_inode(inode). */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 		    && (sb->s_flags & SB_ACTIVE)) {
+#else
+		    && (sb->s_flags & MS_ACTIVE)) {			
+#endif
 			dup.cr_time = std->cr_time;
 			/* Not critical if this function fail. */
 			re_dirty = ni_update_parent(ni, &dup, sync);
