@@ -11,7 +11,9 @@
 #define _LINUX_NTFS3_NTFS_H
 
 #include <linux/blkdev.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
 #include <linux/build_bug.h>
+#endif
 #include <linux/kernel.h>
 #include <linux/stddef.h>
 #include <linux/string.h>
