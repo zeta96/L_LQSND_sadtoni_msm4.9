@@ -386,7 +386,13 @@ requires_new_range:
 
 			WARN_ON(!is_mft && bytes > NTFS3_RUN_MAX_BYTES);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
 			new_ptr = kvmalloc(bytes, GFP_KERNEL);
+#else
+			new_ptr = kmalloc(bytes, GFP_KERNEL);
+			if (!new_ptr)
+				new_ptr = vmalloc(bytes, GFP_KERNEL);
+#endif
 
 			if (!new_ptr)
 				return false;
